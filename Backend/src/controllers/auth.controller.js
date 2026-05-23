@@ -74,7 +74,7 @@ export const signIn = async (req, res) => {
                 { username: username || null },
                 { email: email || null }
             ]
-        });
+        }).select('+password');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found!' });
