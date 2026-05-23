@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import mongoose from 'mongoose';
-import { MONGO_URI } from './config/env.js';
+import { MONGO_URI } from '../config/env.js';
 
 const connectDB = async () => {
     if (!MONGO_URI) {

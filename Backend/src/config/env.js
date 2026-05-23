@@ -10,5 +10,6 @@ export const {
     MONGODB_URI,
     JWT_SECRET,
     JWT_EXPIRES_IN,
-    NODE_ENV
+    NODE_ENV,
+    MONGO_URI
 } = process.env;
