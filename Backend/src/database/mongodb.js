@@ -8,14 +8,14 @@ const connectDB = async () => {
         process.exit(1);
     }
 
-    try {
-        await mongoose.connect(MONGO_URI);
-        console.log('MongoDB connected successfully');
-    }
-    catch (error) {
-        console.error('MongoDB connection failed:', error.message);
+    await mongoose.connect(MONGO_URI)
+    .then( () => {
+        console.log('Database connected successfully!');
+    })
+    .catch( (error) => {
+        console.error('Database connection error:', error.message);
         process.exit(1);
-    }
+    });
 }
 
 export default connectDB;
