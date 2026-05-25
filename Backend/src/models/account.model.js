@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import ledgerModel from './ledger.model.js';
 
 const accountSchema = new mongoose.Schema({
     user: {
@@ -33,6 +34,10 @@ const accountSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 accountSchema.index({ user: 1, accountNumber: 1 });
+
+accountSchema.methods.getBalance = async function() {
+    
+}
 
 const accountModel = mongoose.model('Account', accountSchema);
 

@@ -1,7 +1,7 @@
 import transactionModel from "../models/transaction.model.js";
 import accountModel from "../models/account.model.js";
 
-export const createTransaction = (req, res) => {
+export const createTransaction = async (req, res) => {
     const { sender, reciever, amount, idempotencyKey } = req.body;
 
     if (!sender || !reciever || !amount || !idempotencyKey) {
@@ -10,8 +10,8 @@ export const createTransaction = (req, res) => {
 
     try {
         // check if data is valid
-        const senderAccount = accountModel.findOne({ _id: sender });
-        const recieverAccount = accountModel.findOne({ _id: reciever });
+        const senderAccount = await accountModel.findById({ sender });
+        const recieverAccount = await accountModel.findById({ reciever });
 
         if (!senderAccount) {
             return res.status(400).json({ message: 'Sender account not found!' });
@@ -21,7 +21,7 @@ export const createTransaction = (req, res) => {
         }
 
         // check for duplicate transactions
-        const isTransactionRunning = transactionModel.findOne({ 
+        const isTransactionRunning = await transactionModel.findOne({ 
             idempotencyKey: idempotencyKey
         }).select('_id date status');
 
