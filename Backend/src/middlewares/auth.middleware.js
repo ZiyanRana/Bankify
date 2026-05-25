@@ -2,7 +2,7 @@ import userModel from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env.js";
 
-export const authMiddleware = async (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
     const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -30,3 +30,5 @@ export const authMiddleware = async (req, res, next) => {
         return res.status(401).json({ message: 'Unauthorized, invalid token!' });
     }
 }
+
+export default authMiddleware;

@@ -10,3 +10,5 @@ accountRouter.get('/user/:userId', authMiddleware, getUserAccounts);
 accountRouter.post('/', authMiddleware, createAccount);
 accountRouter.put('/:accountNumber', authMiddleware, updateAccount);
 accountRouter.delete('/:accountNumber', authMiddleware, deleteAccount);
+
+export default accountRouter;
