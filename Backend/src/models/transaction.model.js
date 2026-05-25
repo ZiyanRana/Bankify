@@ -3,13 +3,13 @@ import mongoose from "mongoose";
 const transactionSchema = new mongoose.Schema({
     sender: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Account',
         required: [true, 'The sender account is required for the transaction!'],
         index: true
     },
     reciever: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Account',
         required: [true, 'The reciever account is required for the transaction!'],
         index: true
     },
@@ -20,10 +20,6 @@ const transactionSchema = new mongoose.Schema({
     },
     currency: {
         type: String,
-        required: [true, 'Currency type is required for the transaction'],
-        uppercase: true,
-        match: [/^[A-Z]{3}$/, 'Currency must be a valid 3-letter ISO code!'],
-        index: true
     },
     date: {
         type: Date,
@@ -36,5 +32,15 @@ const transactionSchema = new mongoose.Schema({
             message: 'Transaction status must be either pending, completed, failed, or reversed!',
         },
         default: 'pending'
+    },
+    idempotencyKey: {
+        type: String,
+        required: [true, 'Idempotency key is required for the transaction'],
+        unique: true,
+        index: true
     }
 });
+
+const transactionModel = mongoose.model('Transaction', transactionSchema);
+
+export default transactionModel;
