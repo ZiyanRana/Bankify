@@ -1,5 +1,7 @@
 import transactionModel from "../models/transaction.model.js";
 import accountModel from "../models/account.model.js";
+import mongoose from "mongoose";
+import ledgerModel from "../models/ledger.model.js";
 
 export const createTransaction = async (req, res) => {
     const { sender, reciever, amount, idempotencyKey } = req.body;
@@ -41,7 +43,58 @@ export const createTransaction = async (req, res) => {
         }
 
         // check if the sender has enough balance
-        
+        const senderBalance = await senderAccount.getBalance();
+        if (senderBalance < amount) {
+            return res.status(400).json({ message: `Insufficient balance in the sender account. \nYour balance: ${senderBalance}\nTransaction amount: ${amount}!` });
+        }
+
+        // create transaction
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            const newTransactions = await transactionModel.create({
+                sender,
+                reciever,
+                amount,
+                currency: senderAccount.currency,
+                status: 'pending',
+                idempotencyKey
+            }, { session });
+
+            const newTransaction = newTransactions[0];
+
+            const debitLedgerEntry = await ledgerModel.create({
+                account: sender,
+                amount,
+                transaction: newTransaction._id,
+                type: 'debit'
+            }, { session });
+
+            const creditLedgerEntry = await ledgerModel.create({
+                account: reciever,
+                amount,
+                transaction: newTransaction._id,
+                type: 'credit'
+            }, { session });
+
+            newTransaction.status = 'completed';
+            await newTransaction.save({ session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(200).json({
+                success: true,
+                transaction: newTransaction
+            });
+        }
+        catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            console.error('Error processing transaction: ', error);
+            return res.status(500).json({ message: 'Transaction failed, please try again!' });
+        }
     }
     catch (error) {
         console.error('Error creating transaction: ', error);
