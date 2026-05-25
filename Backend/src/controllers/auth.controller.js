@@ -2,6 +2,7 @@ import userModel from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import { NODE_ENV, JWT_SECRET, JWT_EXPIRES_IN } from '../config/env.js';
 import mongoose from 'mongoose';
+import { sendRegistrationEmail } from '../services/nodemailer.service.js';
 
 export const signUp = async (req, res) => {
     const { username, email, password } = req.body;
@@ -48,6 +49,8 @@ export const signUp = async (req, res) => {
                 email: newUser.email
             }
         });
+
+        await sendRegistrationEmail(newUser.email, newUser.username);
     }
     catch (error) {
         await session.abortTransaction();

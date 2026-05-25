@@ -40,7 +40,7 @@ const sendEmail = async (to, subject, text, html) => {
     }
 }
 
-export const sendRegistratoionEmail = async (userEmail, username) => {
+export const sendRegistrationEmail = async (userEmail, username) => {
     const subject = 'Welcome to Bankify - Digital Banking!';
     const text = `Hi ${username},\n\nThank you for registering with Bankify - Digital Banking! We're excited to have you on board. If you have any questions or need assistance, feel free to reach out to our support team.\n\nBest regards,\nThe Bankify Team`;
     const html = `<p>Hi ${username},</p><p>Thank you for registering with <strong>Bankify - Digital Banking</strong>! We're excited to have you on board. If you have any questions or need assistance, feel free to reach out to our support team.</p><p>Best regards,<br>The Bankify Team</p>`;
