@@ -5,10 +5,11 @@ import accountRouter from './routes/account.routes.js';
 
 const app = express();
 
+// Middlewares
 app.use(express.json());
 app.use(cookieParser());
 
-/* Routes */
+// Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/accounts', accountRouter);
 

@@ -3,6 +3,7 @@ import { getAccount, getUserAccounts, createAccount, updateAccount, deleteAccoun
 
 const accountRouter = Router();
 
+// Path: /api/v1/accounts
 accountRouter.get('/:accountNumber', getAccount);
 accountRouter.get('/user/:userId', getUserAccounts);
 accountRouter.post('/', createAccount);

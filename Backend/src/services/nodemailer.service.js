@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN, EMAIL_USER } from '../config/env.js';
 
+// create transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -12,7 +13,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify the connection configuration
+// verify connection configuration
 transporter.verify((error) => {
   if (error) {
     console.error('Error connecting to email server:', error);
