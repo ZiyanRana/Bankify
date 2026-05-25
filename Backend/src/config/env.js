@@ -11,5 +11,9 @@ export const {
     JWT_SECRET,
     JWT_EXPIRES_IN,
     NODE_ENV,
-    MONGO_URI
+    MONGO_URI,
+    CLIENT_ID,
+    CLIENT_SECRET,
+    REFRESH_TOKEN,
+    EMAIL_USER
 } = process.env;
