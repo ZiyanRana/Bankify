@@ -1,4 +1,4 @@
-# Bankify
+# Bankify - Digital Banking
 
 A complete digital banking system application built using the MERN stack.
 
