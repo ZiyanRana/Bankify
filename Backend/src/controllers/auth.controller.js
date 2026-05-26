@@ -118,7 +118,12 @@ export const signOut = async (req, res) => {
             return res.status(400).json({ message: 'Cannot sign out. No user is currently signed in!' });
         }
 
-        await blackListModel.create({ token });
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        await blackListModel.create({
+            token: token,
+            expiresAt: new Date(decoded.exp * 1000)
+        });
 
         res.clearCookie('token');
         res.status(200).json({
