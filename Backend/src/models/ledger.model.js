@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const ledgerSchema = new mongoose.Schema({
     account: {
-        type: mongoose.Schema.Types.ObjetId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Account',
         required: [true, 'Account is required for logging!'],
         index: true,
