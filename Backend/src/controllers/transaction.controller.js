@@ -94,7 +94,7 @@ export const createTransaction = async (req, res) => {
         await session.commitTransaction();
         await session.endSession();
         
-        // Send transaction email
+        // Send transaction emails
         const senderUser = await userModel.findById(senderAccount.user);
         const reciverUser = await userModel.findById(receiverAccount.user);
         
@@ -158,10 +158,10 @@ export const createInitialFunds = async (req, res) => {
             return res.status(400).json({ message: 'Receiver account not found!' });
         }
         if (!senderAccount) {
-            return res.status(400).json({ message: 'Sender account not found!' });
+            return res.status(400).json({ message: 'System User account not found!' });
         }
         if (senderAccount.currency !== receiverAccount.currency) {
-            return res.status(400).json({ message: 'Cannot proceed, the sender and receiver accounts have different currencies!' });
+            return res.status(400).json({ message: 'Cannot proceed, the system user and receiver accounts have different currencies!' });
         }
 
         // check for duplicate transactions
@@ -180,11 +180,14 @@ export const createInitialFunds = async (req, res) => {
         if (receiverAccount.status !== 'active') {
             return res.status(400).json({ message: 'Cannot proceed, the receiver account is not active!' });
         }
+        if (senderAccount.status !== 'active') {
+            return res.status(400).json({ message: 'Cannot proceed, the system user account is not active!' });
+        }
 
         // check balance
         const senderBalance = await senderAccount.getBalance();
         if (senderBalance < amount) {
-            return res.status(400).json({ message: `Insufficient balance in the system account. \nBalance: ${senderBalance}\nTransaction amount: ${amount}!` });
+            return res.status(400).json({ message: `Insufficient balance in the system account. \nBalance: ${senderBalance}\nTransaction amount: ${amount}!`});
         }
 
         // create transaction
@@ -220,7 +223,7 @@ export const createInitialFunds = async (req, res) => {
         await session.commitTransaction();
         await session.endSession();
 
-        // Send transaction email
+        // Send transaction emails
         const senderUser = await userModel.findById(senderAccount.user);
         const reciverUser = await userModel.findById(receiverAccount.user);
         

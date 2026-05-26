@@ -44,9 +44,13 @@ export const authSystemMiddleware = async (req, res, next) => {
             return res.status(401).json({ message: 'User unauthorized, invalid token!' });
         }
 
-        const user = await userModel.findById(decoded.userId);
+        const user = await userModel.findById(decoded.userId).select('+systemUser');
         if (!user) {
-            return res.status(401).json({ message: 'Unauthorized, user not found!' });
+            return res.status(401).json({ message: 'User associated with the token is not found!' });
+        }
+
+        if (!user.systemUser) {
+            return res.status(401).json({ message: 'User is not a system user!' });
         }
 
         req.user = user;
