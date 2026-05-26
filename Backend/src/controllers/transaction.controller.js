@@ -7,22 +7,32 @@ import ledgerModel from "../models/ledger.model.js";
 import { sendTransactionEmail } from "../services/nodemailer.service.js";
 
 export const createTransaction = async (req, res) => {
-    const { sender, reciever, amount, idempotencyKey } = req.body;
+    const { sender, receiver, amount, idempotencyKey } = req.body;
 
-    if (!sender || !reciever || !amount || !idempotencyKey) {
+    if (!sender || !receiver || !amount || !idempotencyKey) {
         return res.status(400).json({ message: 'Some required fields are missing, cannot proceed!' });
     }
 
+    let session;
     try {
         // check if data is valid
-        const senderAccount = await accountModel.findById({ sender });
-        const recieverAccount = await accountModel.findById({ reciever });
+        if (sender === receiver) {
+            return res.status(400).json({ message: 'Sender and receiver accounts cannot be the same!' });
+        }
+        if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+            return res.status(400).json({ message: 'Invalid amount entered!' });
+        }
+        const senderAccount = await accountModel.findById(sender);
+        const receiverAccount = await accountModel.findById(receiver);
 
         if (!senderAccount) {
             return res.status(400).json({ message: 'Sender account not found!' });
         }
-        if (!recieverAccount) {
-            return res.status(400).json({ message: 'Reciever account not found!' });
+        if (!receiverAccount) {
+            return res.status(400).json({ message: 'Receiver account not found!' });
+        }
+        if (senderAccount.currency !== receiverAccount.currency) {
+            return res.status(400).json({ message: 'Cannot proceed, the sender and receiver accounts have different currencies!' });
         }
 
         // check for duplicate transactions
@@ -41,8 +51,8 @@ export const createTransaction = async (req, res) => {
         if (senderAccount.status !== 'active') {
             return res.status(400).json({ message: 'Cannot proceed, the sender account is not active!' });
         }
-        if (recieverAccount.status !== 'active') {
-            return res.status(400).json({ message: 'Cannot proceed, the reciever account is not active!' });
+        if (receiverAccount.status !== 'active') {
+            return res.status(400).json({ message: 'Cannot proceed, the receiver account is not active!' });
         }
 
         // check if the sender has enough balance
@@ -52,80 +62,74 @@ export const createTransaction = async (req, res) => {
         }
 
         // create transaction
-        const session = await mongoose.startSession();
-        session.startTransaction();
+        session = await mongoose.startSession();
+        await session.startTransaction();
 
-        try {
-            const newTransactions = await transactionModel.create({
-                sender,
-                reciever,
-                amount,
-                currency: senderAccount.currency,
-                status: 'pending',
-                idempotencyKey
-            }, { session });
+        const newTransaction = await transactionModel.create({
+            sender,
+            receiver,
+            amount,
+            currency: senderAccount.currency,
+            status: 'pending',
+            idempotencyKey
+        }, { session });
 
-            const newTransaction = newTransactions[0];
+        const debitLedgerEntry = await ledgerModel.create({
+            account: sender,
+            amount,
+            transaction: newTransaction._id,
+            type: 'debit'
+        }, { session });
 
-            const debitLedgerEntry = await ledgerModel.create({
-                account: sender,
-                amount,
-                transaction: newTransaction._id,
-                type: 'debit'
-            }, { session });
+        const creditLedgerEntry = await ledgerModel.create({
+            account: receiver,
+            amount,
+            transaction: newTransaction._id,
+            type: 'credit'
+        }, { session });
 
-            const creditLedgerEntry = await ledgerModel.create({
-                account: reciever,
-                amount,
-                transaction: newTransaction._id,
-                type: 'credit'
-            }, { session });
+        newTransaction.status = 'completed';
+        await newTransaction.save({ session });
 
-            newTransaction.status = 'completed';
-            await newTransaction.save({ session });
+        await session.commitTransaction();
+        await session.endSession();
+        
+        // Send transaction email
+        const senderUser = await userModel.findById(senderAccount.user);
+        const reciverUser = await userModel.findById(receiverAccount.user);
+        
+        await sendTransactionEmail(
+            senderUser.email,
+            senderUser.username,
+            amount,
+            'Debit',
+            senderAccount.currency,
+            newTransaction.date,
+            newTransaction.status,
+            senderAccount.accountNumber
+        );
+        
+        await sendTransactionEmail(
+            reciverUser.email,
+            reciverUser.username,
+            amount,
+            'Credit',
+            senderAccount.currency,
+            newTransaction.date,
+            newTransaction.status,
+            receiverAccount.accountNumber
+        );
 
-            await session.commitTransaction();
-            session.endSession();
-
-            return res.status(200).json({
-                success: true,
-                transaction: newTransaction
-            });
-
-            // Send transaction email
-            const senderUser = await userModel.findById(sender);
-            const reciverUser = await userModel.findById(reciever);
-
-            await sendTransactionEmail(
-                senderUser.email,
-                senderUser.username,
-                amount,
-                'Debit',
-                senderAccount.currency,
-                newTransaction.date,
-                newTransaction.status,
-                senderAccount.accountNumber
-            );
-            
-            await sendTransactionEmail(
-                reciverUser.email,
-                reciverUser.username,
-                amount,
-                'Credit',
-                senderAccount.currency,
-                newTransaction.date,
-                newTransaction.status,
-                recieverAccount.accountNumber
-            );
-        }
-        catch (error) {
-            await session.abortTransaction();
-            session.endSession();
-            console.error('Error processing transaction: ', error);
-            return res.status(500).json({ message: 'Transaction failed, please try again!' });
-        }
+        return res.status(200).json({
+            success: true,
+            transaction: newTransaction
+        });
     }
     catch (error) {
+        if (session) {
+            await session.abortTransaction();
+            await session.endSession();
+        }
         console.error('Error creating transaction: ', error);
         return res.status(500).json({ message: 'Please try again' });
     }

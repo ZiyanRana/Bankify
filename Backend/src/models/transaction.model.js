@@ -7,10 +7,10 @@ const transactionSchema = new mongoose.Schema({
         required: [true, 'The sender account is required for the transaction!'],
         index: true
     },
-    reciever: {
+    receiver: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Account',
-        required: [true, 'The reciever account is required for the transaction!'],
+        required: [true, 'The receiver account is required for the transaction!'],
         index: true
     },
     amount: {
