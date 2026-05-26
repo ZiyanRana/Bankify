@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getAccount, getUserAccounts, createAccount, updateAccount, deleteAccount } from '../controllers/account.controller.js';
-import authMiddleware from '../middlewares/auth.middleware.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 const accountRouter = Router();
 
