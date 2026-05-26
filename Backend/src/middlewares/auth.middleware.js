@@ -1,6 +1,7 @@
 import userModel from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env.js";
+import blackListModel from "../models/blackList.model.js";
 
 export const authMiddleware = async (req, res, next) => {
     const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
@@ -10,6 +11,11 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     try {
+        const blackListed = await blackListModel.findOne({ token });
+        if (blackListed) {
+            return res.status(401).json({ message: 'Unauthorized, token cannot be used anymore!' });
+        }
+        
         const decoded = jwt.verify(token, JWT_SECRET);
         if (!decoded || !decoded.userId) {
             return res.status(401).json({ message: 'Unauthorized, invalid token!' });
@@ -39,6 +45,11 @@ export const authSystemMiddleware = async (req, res, next) => {
     }
 
     try {
+        const blackListed = await blackListModel.findOne({ token });
+        if (blackListed) {
+            return res.status(401).json({ message: 'Unauthorized, token cannot be used anymore!' });
+        }
+
         const decoded = jwt.verify(token, JWT_SECRET);
         if (!decoded || !decoded.userId) {
             return res.status(401).json({ message: 'User unauthorized, invalid token!' });
@@ -62,4 +73,3 @@ export const authSystemMiddleware = async (req, res, next) => {
         return res.status(401).json({ message: 'User unauthorized, invalid token!' });
     }
 }
-

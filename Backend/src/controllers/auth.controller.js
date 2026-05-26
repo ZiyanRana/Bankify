@@ -1,8 +1,9 @@
 import userModel from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import { NODE_ENV, JWT_SECRET, JWT_EXPIRES_IN } from '../config/env.js';
-import mongoose from 'mongoose';
 import { sendRegistrationEmail } from '../services/nodemailer.service.js';
+import blackListModel from '../models/blackList.model.js';
+import bcrypt from 'bcrypt';
 
 export const signUp = async (req, res) => {
     const { username, email, password } = req.body;
@@ -21,17 +22,10 @@ export const signUp = async (req, res) => {
         return res.status(400).json({ message: 'Cannot register, email is already taken!' });
     }
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
-        const newUsers = await userModel.create([{ username, email, password }], { session });
-        const newUser = newUsers[0];
+        const newUser = await userModel.create({ username, email, password });
 
         const token = jwt.sign({userId: newUser._id}, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-
-        await session.commitTransaction();
-        session.endSession();
 
         res.cookies('token', token, {
             httpOnly: true,
@@ -53,8 +47,6 @@ export const signUp = async (req, res) => {
         await sendRegistrationEmail(newUser.email, newUser.username);
     }
     catch (error) {
-        await session.abortTransaction();
-        session.endSession();
         res.status(500).json({ 
             success: false,
             message: 'An error occurred while creating the user account, please try again!',
@@ -67,11 +59,10 @@ export const signIn = async (req, res) => {
     const { username, email, password } = req.body;
 
     if (!username && !email) {
-        return res.status(400).json({ message: 'Please provide either your username or email to sign in!' });
+        return res.status(400).json({ message: 'Email or username is needed for login!' });
     }
 
     try {
-
         const user = await userModel.findOne({
             $or: [
                 { username: username || null },
@@ -83,8 +74,11 @@ export const signIn = async (req, res) => {
             return res.status(404).json({ message: 'User not found!' });
         }
 
-        const isPasswordValid = await user.comparePassword(password);
+        if (!password) {
+            return res.status(400).json({ message: 'Password not provided!' });
+        }
 
+        const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({ message: 'Incorrect password entered!' });
         }
@@ -117,22 +111,14 @@ export const signIn = async (req, res) => {
     }
 }
 
-export const signOut = (req, res) => {
+export const signOut = async (req, res) => {
     try {
         const token = req.cookies.token;
         if (!token) {
             return res.status(400).json({ message: 'Cannot sign out. No user is currently signed in!' });
         }
 
-        const decoded = jwt.verify(token, JWT_SECRET);
-        if (!decoded || !decoded.userId) {
-            return res.status(400).json({ message: 'Invalid token. Please sign in again!' });
-        }
-
-        const user = userModel.findById(decoded.userId);
-        if (!user) {
-            return res.status(404).json({ message: 'Unauthorized! You cannot perform this operation!' });
-        }
+        await blackListModel.create({ token });
 
         res.clearCookie('token');
         res.status(200).json({
