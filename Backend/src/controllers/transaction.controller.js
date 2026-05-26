@@ -1,7 +1,10 @@
+/* eslint-disable no-unused-vars */
 import transactionModel from "../models/transaction.model.js";
 import accountModel from "../models/account.model.js";
+import userModel from "../models/user.model.js";
 import mongoose from "mongoose";
 import ledgerModel from "../models/ledger.model.js";
+import { sendTransactionEmail } from "../services/nodemailer.service.js";
 
 export const createTransaction = async (req, res) => {
     const { sender, reciever, amount, idempotencyKey } = req.body;
@@ -88,6 +91,32 @@ export const createTransaction = async (req, res) => {
                 success: true,
                 transaction: newTransaction
             });
+
+            // Send transaction email
+            const senderUser = await userModel.findById(sender);
+            const reciverUser = await userModel.findById(reciever);
+
+            await sendTransactionEmail(
+                senderUser.email,
+                senderUser.username,
+                amount,
+                'Debit',
+                senderAccount.currency,
+                newTransaction.date,
+                newTransaction.status,
+                senderAccount.accountNumber
+            );
+            
+            await sendTransactionEmail(
+                reciverUser.email,
+                reciverUser.username,
+                amount,
+                'Credit',
+                senderAccount.currency,
+                newTransaction.date,
+                newTransaction.status,
+                recieverAccount.accountNumber
+            );
         }
         catch (error) {
             await session.abortTransaction();
