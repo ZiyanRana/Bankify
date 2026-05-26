@@ -9,6 +9,10 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+app.get('/', (req, res) => {
+    res.send('Bankify service is up and running!');
+})
+
 // Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/accounts', accountRouter);

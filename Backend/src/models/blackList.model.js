@@ -4,7 +4,7 @@ const blackListSchema = new mongoose.Schema({
     token : {
         type: String,
         required: [true, 'Token is required'],
-        unique: [true, 'Token already blacklisted'],
+        unique: true,
         immutable: true
     },
     expiresAt: {
