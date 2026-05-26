@@ -114,3 +114,35 @@ export const deleteAccount = async (req, res) => {
         res.status(500).json({ message: 'Please try again' });
     }
 }
+
+export const getAccountBalance = async (req, res) => {
+    const accountNumber = req.params.accountNumber;
+
+    try {
+        const account = await accountModel.findOne({ 
+            $or: [
+                { accountNumber: accountNumber },
+                { _id: accountNumber }
+            ]
+        });
+        
+        if (!account) {
+            return res.status(404).json({ message: 'Account not found!' });
+        }
+
+        const accountBalance = account.getBalance();
+
+        res.status(200).json({
+            success: true,
+            message: 'Account balance fetched successfully',
+            data: {
+                account,
+                balance: accountBalance
+            }
+        })
+    }
+    catch (error) {
+        console.error('Error fetching account balance: ', error);
+        res.status(500).json({ message: 'Please try again' });
+    }
+}

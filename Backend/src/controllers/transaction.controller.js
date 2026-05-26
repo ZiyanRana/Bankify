@@ -65,31 +65,31 @@ export const createTransaction = async (req, res) => {
         session = await mongoose.startSession();
         await session.startTransaction();
 
-        const newTransaction = await transactionModel.create({
+        const newTransaction = await transactionModel.create([{
             sender,
             receiver,
             amount,
             currency: senderAccount.currency,
             status: 'pending',
             idempotencyKey
-        }, { session });
+        }]);
 
-        const debitLedgerEntry = await ledgerModel.create({
+        const debitLedgerEntry = await ledgerModel.create([{
             account: sender,
             amount,
-            transaction: newTransaction._id,
+            transaction: newTransaction[0]._id,
             type: 'debit'
-        }, { session });
+        }], { session });
 
-        const creditLedgerEntry = await ledgerModel.create({
+        const creditLedgerEntry = await ledgerModel.create([{
             account: receiver,
             amount,
-            transaction: newTransaction._id,
+            transaction: newTransaction[0]._id,
             type: 'credit'
-        }, { session });
+        }], { session });
 
-        newTransaction.status = 'completed';
-        await newTransaction.save({ session });
+        newTransaction[0].status = 'completed';
+        await newTransaction[0].save({ session });
 
         await session.commitTransaction();
         await session.endSession();
@@ -201,7 +201,7 @@ export const createInitialFunds = async (req, res) => {
             currency: receiverAccount.currency,
             status: 'pending',
             idempotencyKey
-        }], { session });
+        }]);
 
         const debitLedgerEntry = await ledgerModel.create([{
             account: sender,
